@@ -425,7 +425,7 @@ controller_interface::return_type ControllerManager::switch_controller(
 {
   switch_params_ = SwitchParams();
 
-  if (!stop_request_.empty() || !start_request_.empty())
+  if (!stop_request_.empty() || !start_request_.empty())  // 开始切换前默认它俩应该是清空的，下面会给它俩赋值
   {
     RCLCPP_FATAL(
       get_logger(),
@@ -507,7 +507,7 @@ controller_interface::return_type ControllerManager::switch_controller(
     return controller_interface::return_type::OK;
   };
 
-  // list all controllers to stop
+  // list all controllers to stop 从stop_controllers中选出used_by_realtime_controllers_index_里存在的，作为stop_request_
   auto ret = list_controllers(stop_controllers, stop_request_, "stop");
   if (ret != controller_interface::return_type::OK)
   {
@@ -515,7 +515,8 @@ controller_interface::return_type ControllerManager::switch_controller(
     return ret;
   }
 
-  // list all controllers to start
+  // list all controllers to start 从start_controllers中选出used_by_realtime_controllers_index_里存在的，作为start_request_
+  // 注意这里used_by_realtime_controllers_index_只是说已经加载，可能处于各种状态。而stop_request_和start_request_正是要改变它们的状态
   ret = list_controllers(start_controllers, start_request_, "start");
   if (ret != controller_interface::return_type::OK)
   {

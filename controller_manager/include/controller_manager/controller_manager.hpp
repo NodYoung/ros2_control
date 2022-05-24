@@ -164,13 +164,13 @@ protected:
     const ControllerSpec & controller);
 
   CONTROLLER_MANAGER_PUBLIC
-  void manage_switch();
+  void manage_switch();  /// 仅在实时线程中被调用
 
   CONTROLLER_MANAGER_PUBLIC
-  void stop_controllers();
+  void stop_controllers();  /// 仅在实时线程中被调用
 
   CONTROLLER_MANAGER_PUBLIC
-  void start_controllers();
+  void start_controllers();  /// 仅在实时线程中被调用
 
   CONTROLLER_MANAGER_PUBLIC
   void start_controllers_asap();
@@ -268,6 +268,7 @@ private:
    * the non-real-time thread.
    *
    * There's always an "updated" list and an "outdated" one
+   * "updated" list为updated_controllers_index_，"outdated" list为get_other_list(updated_controllers_index_)
    * There's always an "used by rt" list and an "unused by rt" list
    *
    * The updated state changes on the switch_updated_list()
@@ -279,6 +280,7 @@ private:
   public:
     // *INDENT-ON*
     /// update_and_get_used_by_rt_list Makes the "updated" list the "used by rt" list
+    /// 此函数仅在实时线程中被调用，令used_by_realtime_controllers_index_=updated_controllers_index_
     /**
      * \warning Should only be called by the RT thread, no one should modify the
      * updated list while it's being used
@@ -287,8 +289,9 @@ private:
     std::vector<ControllerSpec> & update_and_get_used_by_rt_list();
 
     /**
-     * get_unused_list Waits until the "outdated" and "unused by rt"
+     * get_unused_list Waits until the "outdated" and "unused by rt" 
      * lists match and returns a reference to it
+     * 首先通过get_other_list(updated_controllers_index_)获取outdated_index,然后等待直到outdated_index!=used_by_realtime_controllers_index_.
      * This referenced list can be modified safely until switch_updated_controller_list()
      * is called, at this point the RT thread may start using it at any time
      * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by rt list
@@ -297,6 +300,7 @@ private:
       const std::lock_guard<std::recursive_mutex> & guard);
 
     /// get_updated_list Returns a const reference to the most updated list.
+    /// 获取updated_controllers_index_的控制器
     /**
      * \warning May or may not being used by the realtime thread, read-only reference for safety
      * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by rt list
@@ -307,6 +311,8 @@ private:
     /**
      * switch_updated_list Switches the "updated" and "outdated" lists, and waits
      *  until the RT thread is using the new "updated" list.
+     * 令outdated_index=get_other_list(updated_controllers_index_)，然后updated_controllers_index_=outdated_index，
+     * 等待直到新的updated_controllers_index_在RT线程中被使用
      * \param[in] guard Guard needed to make sure the caller is the only one accessing the unused by rt list
      */
     void switch_updated_list(const std::lock_guard<std::recursive_mutex> & guard);
@@ -324,13 +330,15 @@ private:
      */
     int get_other_list(int index) const;
 
+    /// 等待直到当前index不再被RT线程使用
     void wait_until_rt_not_using(
       int index, std::chrono::microseconds sleep_delay = std::chrono::microseconds(200)) const;
 
     std::vector<ControllerSpec> controllers_lists_[2];
     /// The index of the controller list with the most updated information
     int updated_controllers_index_ = 0;
-    /// The index of the controllers list being used in the real-time thread.
+    /// The index of the controllers list being used in the real-time thread.  
+    /// RT线程中正在使用的控制器index，RT线程中每次update时都会令used_by_realtime_controllers_index_=updated_controllers_index_
     int used_by_realtime_controllers_index_ = -1;
   };
 
