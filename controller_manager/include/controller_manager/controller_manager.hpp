@@ -267,8 +267,7 @@ private:
    * to avoid needing to lock the real-time thread when switching controllers in
    * the non-real-time thread.
    *
-   * There's always an "updated" list and an "outdated" one
-   * "updated" list为updated_controllers_index_，"outdated" list为get_other_list(updated_controllers_index_)
+   * There's always an "updated" list and an "outdated" one /// "updated" list为updated_controllers_index_，"outdated" list为get_other_list(updated_controllers_index_)
    * There's always an "used by rt" list and an "unused by rt" list
    *
    * The updated state changes on the switch_updated_list()
@@ -330,7 +329,7 @@ private:
      */
     int get_other_list(int index) const;
 
-    /// 等待直到当前index不再被RT线程使用
+    /// 等待直到当前index不再被RT线程使用，即!=used_by_realtime_controllers_index_
     void wait_until_rt_not_using(
       int index, std::chrono::microseconds sleep_delay = std::chrono::microseconds(200)) const;
 

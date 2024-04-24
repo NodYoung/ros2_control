@@ -314,7 +314,7 @@ controller_interface::return_type ControllerManager::unload_controller(
   auto found_it = std::find_if(
     to.begin(), to.end(),
     std::bind(controller_name_compare, std::placeholders::_1, controller_name));
-  if (found_it == to.end())
+  if (found_it == to.end())    /// 找不到这个控制器，不需要移除
   {
     // Fails if we could not remove the controllers
     to.clear();
@@ -657,7 +657,7 @@ controller_interface::return_type ControllerManager::switch_controller(
 
   // wait until switch is finished
   RCLCPP_DEBUG(get_logger(), "Request atomic controller switch from realtime loop");
-  while (rclcpp::ok() && switch_params_.do_switch)
+  while (rclcpp::ok() && switch_params_.do_switch)   // 等待实时线程中执行manage_switch()完成控制器的deactivate，claim_xxx接口等
   {
     if (!rclcpp::ok())
     {
